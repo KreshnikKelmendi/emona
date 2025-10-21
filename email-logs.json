@@ -1,0 +1,44 @@
+[
+  {
+    "timestamp": "2025-10-15T12:10:03.072Z",
+    "to": "kreshnik.kelmendi1994@gmail.com",
+    "subject": "New Form Submission - Emona Contest",
+    "content": "\nNew Form Submission - Emona Contest\n\nUser Details:\n- Full Name: Kreshnik Kelmendi\n- Barcode: 23323\n- Phone: +383 +38349831671\n- Email: kreshnik.kelmendi1994@gmail.com\n- Receipt: logo-prishtinafestive2.png\n\nSubmitted at: 15/10/2025, 14:10:02\n\n---\nThis email was sent from the Emona contest form.\n    ",
+    "formData": {
+      "fullName": "Kreshnik Kelmendi",
+      "barcode": "23323",
+      "phone": "+38349831671",
+      "email": "kreshnik.kelmendi1994@gmail.com",
+      "hasReceipt": true,
+      "receiptName": "logo-prishtinafestive2.png"
+    }
+  },
+  {
+    "timestamp": "2025-10-15T12:22:58.551Z",
+    "to": "kreshnik.kelmendi1994@gmail.com",
+    "subject": "New Form Submission - Emona Contest",
+    "content": "\nNew Form Submission - Emona Contest\n\nUser Details:\n- Full Name: Kreshnik Kelmendi\n- Barcode: 23323\n- Phone: +383 +3834894549\n- Email: kreshnik.kelmendi1994@gmail.com\n- Receipt: logo-prishtinafestive2.png\n\nSubmitted at: 15/10/2025, 14:22:58\n\n---\nThis email was sent from the Emona contest form.\n    ",
+    "formData": {
+      "fullName": "Kreshnik Kelmendi",
+      "barcode": "23323",
+      "phone": "+3834894549",
+      "email": "kreshnik.kelmendi1994@gmail.com",
+      "hasReceipt": true,
+      "receiptName": "logo-prishtinafestive2.png"
+    }
+  },
+  {
+    "timestamp": "2025-10-15T12:37:01.697Z",
+    "to": "kreshnik.kelmendi1994@gmail.com",
+    "subject": "New Form Submission - Emona Contest",
+    "content": "\nNew Form Submission - Emona Contest\n\nUser Details:\n- Full Name: Kreshnik Kelmendi\n- Barcode: 23323\n- Phone: +383 +38349831671\n- Email: kreshnik.kelmendi@trekuartista.com\n- Receipt: logo-prishtinafestive2.png\n\nSubmitted at: 15/10/2025, 14:37:01\n\n---\nThis email was sent from the Emona contest form.\n    ",
+    "formData": {
+      "fullName": "Kreshnik Kelmendi",
+      "barcode": "23323",
+      "phone": "+38349831671",
+      "email": "kreshnik.kelmendi@trekuartista.com",
+      "hasReceipt": true,
+      "receiptName": "logo-prishtinafestive2.png"
+    }
+  }
+]
