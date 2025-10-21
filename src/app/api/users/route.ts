@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '../../../lib/mongodb';
 import User from '../../../models/User';
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
     // Connect to MongoDB
     await connectDB();
@@ -20,8 +20,8 @@ export async function GET(req: NextRequest) {
       count: users.length
     }, { status: 200 });
 
-  } catch (error: any) {
-    console.error('Error fetching users:', error);
+  } catch (error: unknown) {
+    console.error('Error fetching users:', error instanceof Error ? error.message : error);
 
     // Generic error response
     return NextResponse.json({ 

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import Image from "next/image";
 
 interface User {
   _id: string;
@@ -12,19 +13,13 @@ interface User {
 
 export default function Users() {
   const [users, setUsers] = useState<User[]>([]);
-  const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "name">("newest");
 
   useEffect(() => {
     fetchUsers();
   }, []);
 
-  useEffect(() => {
-    filterAndSortUsers();
-  }, [users, searchTerm, sortBy]);
 
   const fetchUsers = async () => {
     try {
@@ -44,34 +39,6 @@ export default function Users() {
     }
   };
 
-  const filterAndSortUsers = () => {
-    let filtered = users;
-
-    // Filter by search term
-    if (searchTerm) {
-      filtered = users.filter(user => 
-        (user.fullName && user.fullName.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (user.phone && user.phone.includes(searchTerm)) ||
-        (user.fileUpload && user.fileUpload.toLowerCase().includes(searchTerm.toLowerCase()))
-      );
-    }
-
-    // Sort users
-    filtered = [...filtered].sort((a, b) => {
-      switch (sortBy) {
-        case "newest":
-          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-        case "oldest":
-          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-        case "name":
-          return a.fullName.localeCompare(b.fullName);
-        default:
-          return 0;
-      }
-    });
-
-    setFilteredUsers(filtered);
-  };
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -185,10 +152,12 @@ export default function Users() {
                     <td className="px-6 py-4 whitespace-nowrap">
                       {user.fileUpload && user.fileUpload.startsWith('data:image/') ? (
                         <div className="flex items-center">
-                          <img 
+                          <Image 
                             src={user.fileUpload} 
                             alt={`Skedar për ${user.fullName || ''}`}
-                            className="w-12 h-12 object-cover rounded-lg border border-gray-200 cursor-pointer hover:opacity-80 transition-opacity mr-3"
+                            width={48}
+                            height={48}
+                            className="object-cover rounded-lg border border-gray-200 cursor-pointer hover:opacity-80 transition-opacity mr-3"
                             onClick={() => {
                               const newWindow = window.open();
                               if (newWindow) {

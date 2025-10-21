@@ -7,9 +7,6 @@ const Gifts = () => {
     const [isLidOpen, setIsLidOpen] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
 
-    const toggleLid = () => {
-        setIsLidOpen(!isLidOpen);
-    };
 
     const handleGiftsClick = () => {
         if (isModalOpen) {

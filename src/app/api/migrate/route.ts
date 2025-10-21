@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { migrateUsersToMongoDB } from '../../../lib/migrateToMongoDB';
 
-export async function POST(req: NextRequest) {
+export async function POST() {
   try {
     console.log('Starting migration process...');
     
@@ -22,16 +22,16 @@ export async function POST(req: NextRequest) {
       }, { status: 500 });
     }
     
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Migration API error:', error);
     return NextResponse.json({
       message: 'Migration failed',
-      error: error.message
+      error: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 });
   }
 }
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   return NextResponse.json({
     message: 'Migration endpoint. Use POST to run migration.',
     usage: 'POST /api/migrate to migrate JSON data to MongoDB'

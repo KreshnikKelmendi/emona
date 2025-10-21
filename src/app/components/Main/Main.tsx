@@ -15,10 +15,6 @@ export default function Main({ onGameJoin }: MainProps) {
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitStatus, setSubmitStatus] = useState<{
-    type: 'success' | 'error' | null;
-    message: string;
-  }>({ type: null, message: '' });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -39,7 +35,6 @@ export default function Main({ onGameJoin }: MainProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    setSubmitStatus({ type: null, message: '' });
 
     try {
       // Convert file to base64 if present
@@ -75,16 +70,10 @@ export default function Main({ onGameJoin }: MainProps) {
         // Trigger success screen with user's name
         onGameJoin(formData.fullName);
       } else {
-        setSubmitStatus({
-          type: 'error',
-          message: result.message || 'Failed to submit form. Please try again.'
-        });
+        console.error('Form submission failed:', result.message || 'Failed to submit form. Please try again.');
       }
-    } catch (error) {
-      setSubmitStatus({
-        type: 'error',
-        message: 'Network error. Please check your connection and try again.'
-      });
+    } catch {
+      console.error('Network error. Please check your connection and try again.');
     } finally {
       setIsSubmitting(false);
     }

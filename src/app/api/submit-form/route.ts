@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
     // Extract form data from request body
     const body = await req.json();
     console.log('Received form data:', body);
-    const { fullName, phone, fileUpload, barcode, email, purchaseReceipt } = body;
+    const { fullName, phone, fileUpload } = body;
 
     // Validate required fields
     if (!fullName || !phone || !fileUpload) {
@@ -49,15 +49,15 @@ export async function POST(req: NextRequest) {
       }
     }, { status: 201 });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error saving user:', error);
 
 
     // Handle validation errors
-    if (error.name === 'ValidationError') {
-      const validationErrors: any = {};
-      Object.keys(error.errors).forEach(key => {
-        validationErrors[key] = error.errors[key].message;
+    if (error instanceof Error && error.name === 'ValidationError') {
+      const validationErrors: Record<string, string> = {};
+      Object.keys((error as any).errors).forEach(key => {
+        validationErrors[key] = (error as any).errors[key].message;
       });
       return NextResponse.json({ 
         message: 'Validation error',

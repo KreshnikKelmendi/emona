@@ -3,6 +3,12 @@ import path from 'path';
 
 const DATA_FILE = path.join(process.cwd(), 'data', 'users.json');
 
+interface UserData {
+  fullName: string;
+  phone: string;
+  fileUpload: string;
+}
+
 // Ensure data directory exists
 const ensureDataDir = () => {
   const dataDir = path.dirname(DATA_FILE);
@@ -27,7 +33,7 @@ export const getUsers = () => {
 };
 
 // Save users to file
-export const saveUser = (userData: any) => {
+export const saveUser = (userData: UserData) => {
   try {
     ensureDataDir();
     const users = getUsers();

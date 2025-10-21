@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import CajiZemresLogo from "../SvgIcons/CajiZemresLogo";
 import EmonaBrandLogo from "../SvgIcons/EmonaBrandLogo";
-import Footer from "../Footer/Footer";
 
 interface SuccessScreenProps {
   onComplete: () => void;

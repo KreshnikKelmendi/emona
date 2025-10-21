@@ -1,6 +1,5 @@
 import EmonaBrandLogo from "../SvgIcons/EmonaBrandLogo";
 import CajiZemresLogo from "../SvgIcons/CajiZemresLogo";
-import Link from "next/link";
 
 export default function Navbar() {
   return (

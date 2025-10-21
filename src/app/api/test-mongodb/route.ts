@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { testMongoDBConnection } from '../../../lib/testMongoDB';
 
-export async function POST(req: NextRequest) {
+export async function POST() {
   try {
     console.log('Starting MongoDB connection test...');
     
@@ -19,16 +19,16 @@ export async function POST(req: NextRequest) {
       }, { status: 500 });
     }
     
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('MongoDB test API error:', error);
     return NextResponse.json({
       message: 'MongoDB test failed',
-      error: error.message
+      error: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 });
   }
 }
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   return NextResponse.json({
     message: 'MongoDB test endpoint. Use POST to run tests.',
     usage: 'POST /api/test-mongodb to test MongoDB connection and operations'
