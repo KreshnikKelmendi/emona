@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { testMongoDBConnection } from '../../../lib/testMongoDB';
 
 export async function POST() {

@@ -56,8 +56,9 @@ export async function POST(req: NextRequest) {
     // Handle validation errors
     if (error instanceof Error && error.name === 'ValidationError') {
       const validationErrors: Record<string, string> = {};
-      Object.keys((error as any).errors).forEach(key => {
-        validationErrors[key] = (error as any).errors[key].message;
+      const validationError = error as Error & { errors: Record<string, { message: string }> };
+      Object.keys(validationError.errors).forEach(key => {
+        validationErrors[key] = validationError.errors[key].message;
       });
       return NextResponse.json({ 
         message: 'Validation error',
