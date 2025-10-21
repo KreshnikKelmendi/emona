@@ -31,7 +31,7 @@ Make sure you have your MongoDB connection string in your `.env.local` file:
 ```env
 MONGODB_URI=mongodb://localhost:27017/your-database-name
 # OR for MongoDB Atlas:
-MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/your-database-name
+MONGODB_URI=mongodb+srv://your-username:your-password@your-cluster.mongodb.net/your-database-name
 ```
 
 ### 2. Install Dependencies
