@@ -9,8 +9,10 @@ export async function GET() {
     console.log('Connected to MongoDB for users fetch');
 
     // Fetch all users from MongoDB, sorted by creation date (newest first)
+    // Add limit to prevent timeout with large datasets
     const users = await User.find({})
       .sort({ createdAt: -1 })
+      .limit(1000) // Limit to 1000 users to prevent timeout
       .lean();
 
     // Return users data

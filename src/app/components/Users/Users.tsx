@@ -131,23 +131,16 @@ export default function Users() {
               <tbody className="bg-white divide-y divide-gray-200">
                 {users.map((user, index) => (
                   <tr key={user._id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap font-bwseidoround-medium text-gray-900">
-                      {index + 1}
+                    <td className="px-6 py-4 text-sm whitespace-nowrap font-anton text-gray-400">
+                      {users.length - index}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="w-10 h-10 bg-[#D92127] rounded-full flex items-center justify-center text-white font-bwseidoround-bold text-sm mr-4">
-                          {(user.fullName || '?').charAt(0).toUpperCase()}
-                        </div>
-                        <div>
-                          <div className="font-bwseidoround-medium text-gray-900">
-                            {user.fullName || 'Përdorues i Panjohur'}
-                          </div>
-                        </div>
+                      <div className="font-bwseidoround text-gray-900 text-base">
+                        {user.fullName || 'Përdorues i Panjohur'}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap font-bwseidoround-thin text-gray-900">
-                      +383 {user.phone}
+                      {user.phone}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {user.fileUpload && user.fileUpload.startsWith('data:image/') ? (

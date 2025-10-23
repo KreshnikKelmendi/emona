@@ -42,34 +42,38 @@ export async function migrateUsersToMongoDB() {
       };
     }
 
-    // Transform and save users to MongoDB
+    // Transform and save users to MongoDB in batches to prevent timeout
     const migratedUsers = [];
     let successCount = 0;
     let errorCount = 0;
+    const batchSize = 50; // Process 50 users at a time
 
-    for (const user of users) {
+    for (let i = 0; i < users.length; i += batchSize) {
+      const batch = users.slice(i, i + batchSize);
+      console.log(`Processing batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(users.length / batchSize)}`);
+      
       try {
-        // Create new user document with proper field mapping
-        const newUser = new User({
+        // Prepare batch data
+        const batchData = batch.map(user => ({
           fullName: user.fullName,
           phone: user.phone,
           fileUpload: user.fileUpload,
           barcode: user.barcode || undefined,
           email: user.email || undefined,
           purchaseReceipt: user.purchaseReceipt || undefined,
-          // Preserve original timestamps if they exist
           createdAt: user.createdAt ? new Date(user.createdAt) : new Date(),
           updatedAt: user.updatedAt ? new Date(user.updatedAt) : new Date()
-        });
+        }));
 
-        const savedUser = await newUser.save();
-        migratedUsers.push(savedUser._id);
-        successCount++;
+        // Insert batch
+        const savedUsers = await User.insertMany(batchData, { ordered: false });
+        migratedUsers.push(...savedUsers.map(u => u._id));
+        successCount += savedUsers.length;
         
-        console.log(`Migrated user: ${user.fullName} (${user.phone})`);
+        console.log(`Migrated batch: ${savedUsers.length} users`);
       } catch (error) {
-        console.error(`Error migrating user ${user.fullName}:`, error);
-        errorCount++;
+        console.error(`Error migrating batch starting at index ${i}:`, error);
+        errorCount += batch.length;
       }
     }
 
