@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import Image from 'next/image';
 
 interface GiftsModalProps {
   isOpen: boolean;
@@ -178,9 +179,11 @@ const GiftsModal: React.FC<GiftsModalProps> = ({ isOpen, onClose }) => {
                         ease: "easeOut"
                       }}
                     >
-                      <img 
+                      <Image 
                         src={gift.image} 
                         alt={gift.title}
+                        width={200}
+                        height={128}
                         className="max-w-full max-h-full object-contain"
                       />
                     </motion.div>
@@ -228,9 +231,11 @@ const GiftsModal: React.FC<GiftsModalProps> = ({ isOpen, onClose }) => {
                       ease: "easeOut"
                     }}
                   >
-                    <img 
+                    <Image 
                       src={gifts[2].image} 
                       alt={gifts[2].title}
+                      width={200}
+                      height={256}
                       className="max-w-full max-h-full object-contain"
                     />
                   </motion.div>
@@ -279,9 +284,11 @@ const GiftsModal: React.FC<GiftsModalProps> = ({ isOpen, onClose }) => {
                         ease: "easeOut"
                       }}
                     >
-                      <img 
+                      <Image 
                         src={gift.image} 
                         alt={gift.title}
+                        width={200}
+                        height={128}
                         className="max-w-full max-h-full object-contain"
                       />
                     </motion.div>
@@ -333,9 +340,11 @@ const GiftsModal: React.FC<GiftsModalProps> = ({ isOpen, onClose }) => {
                         ease: "easeOut"
                       }}
                     >
-                      <img 
+                      <Image 
                         src={gift.image} 
                         alt={gift.title}
+                        width={200}
+                        height={384}
                         className="max-w-full max-h-full object-contain"
                       />
                     </motion.div>
