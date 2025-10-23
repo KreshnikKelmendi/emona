@@ -62,8 +62,6 @@ export default function Main({ onGameJoin }: MainProps) {
         }),
       });
 
-      const result = await response.json();
-
       if (response.ok) {
         // Reset form without showing success message
         setFormData({

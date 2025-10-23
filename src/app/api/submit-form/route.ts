@@ -2,16 +2,16 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '../../../lib/mongodb';
 import User from '../../../models/User';
 
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest): Promise<Response> {
   try {
     console.log('Starting form submission...');
 
     // Set a timeout for the entire operation
-    const timeoutPromise = new Promise((_, reject) => {
+    const timeoutPromise = new Promise<never>((_, reject) => {
       setTimeout(() => reject(new Error('Request timeout')), 30000); // 30 second timeout
     });
 
-    const operationPromise = async () => {
+    const operationPromise = async (): Promise<Response> => {
       // Connect to MongoDB
       await connectDB();
       console.log('Connected to MongoDB');
