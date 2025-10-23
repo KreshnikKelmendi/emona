@@ -127,7 +127,7 @@ export default function Main({ onGameJoin }: MainProps) {
               value={formData.phone}
               onChange={handleInputChange}
               className="w-full px-3 h-[56px] text-white bg-black/20 rounded-[8px] focus:outline-none focus:ring-1 focus:ring-[#FCC879] placeholder:text-[#EBA486] text-base font-bwseidoround-thin"
-              placeholder="Nr. i Telefonit"
+              placeholder="+383 | Nr. i Telefonit"
               required
             />
           </div>
