@@ -95,7 +95,7 @@ const Gifts = () => {
 
                 <button
                     onClick={handleGiftsClick}
-                    className="group transition-all cursor-pointer duration-300 ease-in-out hover:scale-110 active:scale-95 bg-[#FCC879] p-3 w-[50px] h-[50px] gap-[1.5px] flex flex-col justify-center items-center rounded-full hover:shadow-lg"
+                    className="group transition-all cursor-pointer duration-300 ease-in-out hover:scale-110 active:scale-95 bg-[#FFE0B2] p-3 w-[50px] h-[50px] gap-[1.5px] flex flex-col justify-center items-center rounded-full hover:shadow-lg"
                 >
                     <svg
                         width="47"

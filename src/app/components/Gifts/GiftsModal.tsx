@@ -73,7 +73,7 @@ const GiftsModal: React.FC<GiftsModalProps> = ({ isOpen, onClose }) => {
           >
             {/* Speech bubble pointer */}
             <motion.div 
-              className="absolute -top-2 right-4 w-0 h-0 border-l-[12px] border-r-[12px] border-b-[12px] border-l-transparent border-r-transparent border-b-[#FCC879] z-10"
+              className="absolute -top-2 right-4 w-0 h-0 border-l-[12px] border-r-[12px] border-b-[12px] border-l-transparent border-r-transparent border-b-[#FFE0B2] z-10"
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
@@ -86,7 +86,7 @@ const GiftsModal: React.FC<GiftsModalProps> = ({ isOpen, onClose }) => {
             
             {/* Modal Content */}
             <motion.div 
-              className="relative bg-[#FCC879] rounded-[8px] shadow-2xl p-4 h-full py-16 overflow-hidden lg:py-0 pointer-events-auto"
+              className="relative bg-[#FFE0B2] rounded-[8px] p-4 h-full py-16 overflow-hidden lg:py-0 pointer-events-auto"
               initial={{ opacity: 0, y: 20, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 20, scale: 0.95 }}
