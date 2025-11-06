@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 
@@ -24,10 +24,22 @@ interface User {
   createdAt: string;
 }
 
+interface Winner {
+  prizeId: number;
+  [key: string]: unknown;
+}
+
 interface PrizeRouletteProps {
   isOpen: boolean;
   onClose: () => void;
 }
+
+const prizes: Prize[] = [
+  { id: 1, name: "iPhone 17", image: "/assets/iphone-17.png" },
+  { id: 2, name: "Paketime Caji Emona", image: "/assets/paketimi.png" },
+  { id: 3, name: "Para te Gatshme", image: "/assets/money.png" },
+  { id: 4, name: "Skuter Elektrik", image: "/assets/skuter-2.png" },
+];
 
 const PrizeRoulette: React.FC<PrizeRouletteProps> = ({ isOpen, onClose }) => {
   const [selectedPrize, setSelectedPrize] = useState<Prize | null>(null);
@@ -41,23 +53,8 @@ const PrizeRoulette: React.FC<PrizeRouletteProps> = ({ isOpen, onClose }) => {
   const [totalQuantityInput, setTotalQuantityInput] = useState<string>(''); // Total quantity needed for selected prize
   const animationIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  const prizes: Prize[] = [
-    { id: 1, name: "iPhone 17", image: "/assets/iphone-17.png" },
-    { id: 2, name: "Paketime Caji Emona", image: "/assets/paketimi.png" },
-    { id: 3, name: "Para te Gatshme", image: "/assets/money.png" },
-    { id: 4, name: "Skuter Elektrik", image: "/assets/skuter-2.png" },
-  ];
-
-  // Fetch users when component opens
-  useEffect(() => {
-    if (isOpen) {
-      fetchUsers();
-      fetchWinnersCount();
-    }
-  }, [isOpen]);
-
   // Fetch winners count for each prize to track distribution
-  const fetchWinnersCount = async () => {
+  const fetchWinnersCount = useCallback(async () => {
     try {
       const response = await fetch('/api/winners');
       if (response.ok) {
@@ -67,7 +64,7 @@ const PrizeRoulette: React.FC<PrizeRouletteProps> = ({ isOpen, onClose }) => {
         // Count winners per prize
         const countByPrize: Record<number, number> = {};
         prizes.forEach(prize => {
-          countByPrize[prize.id] = winners.filter((w: any) => w.prizeId === prize.id).length;
+          countByPrize[prize.id] = winners.filter((w: Winner) => w.prizeId === prize.id).length;
         });
         
         // Update prize configs with current winners count
@@ -84,7 +81,15 @@ const PrizeRoulette: React.FC<PrizeRouletteProps> = ({ isOpen, onClose }) => {
     } catch (error) {
       console.error('Error fetching winners count:', error);
     }
-  };
+  }, []);
+
+  // Fetch users when component opens
+  useEffect(() => {
+    if (isOpen) {
+      fetchUsers();
+      fetchWinnersCount();
+    }
+  }, [isOpen, fetchWinnersCount]);
 
   const fetchUsers = async () => {
     try {
