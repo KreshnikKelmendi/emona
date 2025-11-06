@@ -57,7 +57,7 @@ export default function LoadingScreen({ onComplete }: LoadingScreenProps) {
             : "scale-90 opacity-0"
         }`}
       >
-        <div className="relative">
+        <div className="relative logo-animation">
             <CajiZemresLogo />
         </div>
       </div>
@@ -94,11 +94,49 @@ export default function LoadingScreen({ onComplete }: LoadingScreenProps) {
             filter: brightness(1.2) contrast(1.1) saturate(1.3);
           }
         }
+
+        @keyframes logo-float {
+          0%, 100% {
+            transform: translateY(0px) scale(1);
+          }
+          50% {
+            transform: translateY(-15px) scale(1.05);
+          }
+        }
+
+        @keyframes logo-pulse {
+          0%, 100% {
+            opacity: 1;
+            filter: drop-shadow(0 0 0px rgba(255, 255, 255, 0));
+          }
+          50% {
+            opacity: 0.95;
+            filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.5));
+          }
+        }
+
+        @keyframes logo-shimmer {
+          0% {
+            filter: brightness(1) drop-shadow(0 0 10px rgba(255, 255, 255, 0));
+          }
+          50% {
+            filter: brightness(1.15) drop-shadow(0 0 25px rgba(255, 255, 255, 0.6));
+          }
+          100% {
+            filter: brightness(1) drop-shadow(0 0 10px rgba(255, 255, 255, 0));
+          }
+        }
         
         .animate-posh-spin {
           animation: posh-spin 20s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite,
                      posh-pulse 10s ease-in-out infinite;
           transform-origin: center;
+        }
+
+        .logo-animation {
+          animation: logo-float 3s ease-in-out infinite,
+                     logo-pulse 2s ease-in-out infinite,
+                     logo-shimmer 4s ease-in-out infinite;
         }
       `}</style>
     </div>
