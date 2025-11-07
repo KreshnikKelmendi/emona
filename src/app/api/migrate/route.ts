@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { migrateUsersToMongoDB } from '../../../lib/migrateToMongoDB';
 
+export const runtime = 'nodejs';
+
 export async function POST() {
   try {
     console.log('Starting migration process...');

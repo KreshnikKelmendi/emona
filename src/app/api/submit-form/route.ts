@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '../../../lib/mongodb';
 import User from '../../../models/User';
+import { compressFileUpload } from '../../../lib/compressFileUpload';
+
+export const runtime = 'nodejs';
 
 export async function POST(req: NextRequest): Promise<Response> {
   try {
@@ -33,11 +36,13 @@ export async function POST(req: NextRequest): Promise<Response> {
         }, { status: 400 });
       }
 
+      const compressedFileUpload = await compressFileUpload(fileUpload);
+
       // Create new user document - only include required fields for now
       const newUser = new User({
         fullName,
         phone,
-        fileUpload
+        fileUpload: compressedFileUpload
       });
 
       // Save user to MongoDB

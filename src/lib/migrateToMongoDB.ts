@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import connectDB from './mongodb';
 import User from '../models/User';
+import { compressFileUpload } from './compressFileUpload';
 
 const DATA_FILE = path.join(process.cwd(), 'data', 'users.json');
 
@@ -54,16 +55,16 @@ export async function migrateUsersToMongoDB() {
       
       try {
         // Prepare batch data
-        const batchData = batch.map(user => ({
+        const batchData = await Promise.all(batch.map(async user => ({
           fullName: user.fullName,
           phone: user.phone,
-          fileUpload: user.fileUpload,
+          fileUpload: await compressFileUpload(user.fileUpload),
           barcode: user.barcode || undefined,
           email: user.email || undefined,
           purchaseReceipt: user.purchaseReceipt || undefined,
           createdAt: user.createdAt ? new Date(user.createdAt) : new Date(),
           updatedAt: user.updatedAt ? new Date(user.updatedAt) : new Date()
-        }));
+        })));
 
         // Insert batch
         const savedUsers = await User.insertMany(batchData, { ordered: false });

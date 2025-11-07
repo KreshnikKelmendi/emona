@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '../../../lib/mongodb';
 import Winner from '../../../models/Winner';
+import { compressFileUpload } from '../../../lib/compressFileUpload';
+
+export const runtime = 'nodejs';
 
 // GET - Fetch all winners
 export async function GET() {
@@ -54,6 +57,8 @@ export async function POST(req: NextRequest) {
       }, { status: 400 });
     }
 
+    const compressedPrizeImage = await compressFileUpload(prizeImage);
+
     // Create new winner document
     const newWinner = new Winner({
       userId,
@@ -61,7 +66,7 @@ export async function POST(req: NextRequest) {
       phone,
       prizeId,
       prizeName,
-      prizeImage,
+      prizeImage: compressedPrizeImage,
       quantity,
       totalQuantity
     });
