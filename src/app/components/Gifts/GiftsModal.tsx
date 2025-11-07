@@ -79,7 +79,7 @@ const GiftsModal: React.FC<GiftsModalProps> = ({ isOpen, onClose }) => {
     <AnimatePresence>
       {isOpen && (
         <motion.div 
-          className="fixed inset-0 z-50 "
+          className="fixed inset-0 z-30 "
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -206,7 +206,7 @@ const GiftsModal: React.FC<GiftsModalProps> = ({ isOpen, onClose }) => {
                               alt={currentGift.title}
                               fill
                               sizes="(max-width: 768px) 80vw, 40vw"
-                              className="object-contain"
+                              className="object-contain rounded-[18px]"
                               priority
                             />
                           </motion.div>

@@ -3,7 +3,7 @@ import Image from 'next/image'
 
 const EmonaBrandLogo = () => {
   return (
-    <div className='pt-4'>
+    <div className='pt-4 z-50'>
       <Image
         src="/assets/logo-emona.png"
         alt="Emona Logo"
