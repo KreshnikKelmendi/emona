@@ -206,7 +206,7 @@ const GiftsModal: React.FC<GiftsModalProps> = ({ isOpen, onClose }) => {
                               alt={currentGift.title}
                               fill
                               sizes="(max-width: 768px) 80vw, 40vw"
-                              className="object-contain rounded-[18px]"
+                              className="object-contain rounded-[18px] drop-shadow-[0_8px_16px_rgba(255,176,94,0.5)]"
                               priority
                             />
                           </motion.div>

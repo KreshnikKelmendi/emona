@@ -35,10 +35,12 @@ interface PrizeRouletteProps {
 }
 
 const prizes: Prize[] = [
-  { id: 1, name: "iPhone 17", image: "/assets/iphone-17.png" },
-  { id: 2, name: "Paketime Caji Emona", image: "/assets/paketimi.png" },
-  { id: 3, name: "Para te Gatshme", image: "/assets/money.png" },
-  { id: 4, name: "Skuter Elektrik", image: "/assets/skuter-2.png" },
+  { id: 1, name: "iPhone 17", image: "/assets/shperblime-01.webp" },
+  { id: 2, name: "Paketime Caji Emona", image: "/assets/shperblime-02.webp" },
+  { id: 3, name: "Para te Gatshme", image: "/assets/shperblime-03.webp" },
+  { id: 4, name: "Skuter Elektrik", image: "/assets/shperblime-04.webp" },
+  { id: 5, name: "Apple Smartwatch", image: "/assets/shperblime-05.webp" },
+  { id: 6, name: "Derivate në vlerë 50 euro", image: "/assets/shperblime-06.webp" },
 ];
 
 const PrizeRoulette: React.FC<PrizeRouletteProps> = ({ isOpen, onClose }) => {
@@ -50,6 +52,7 @@ const PrizeRoulette: React.FC<PrizeRouletteProps> = ({ isOpen, onClose }) => {
   const [currentDisplayIndex, setCurrentDisplayIndex] = useState(0);
   const [prizeConfigs, setPrizeConfigs] = useState<Record<number, PrizeConfig>>({});
   const [isSavingWinner, setIsSavingWinner] = useState(false);
+  const [isWinnerAccepted, setIsWinnerAccepted] = useState(false);
   const [totalQuantityInput, setTotalQuantityInput] = useState<string>(''); // Total quantity needed for selected prize
   const animationIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -128,13 +131,13 @@ const PrizeRoulette: React.FC<PrizeRouletteProps> = ({ isOpen, onClose }) => {
     const randomWinnerIndex = Math.floor(Math.random() * users.length);
     const targetWinner = users[randomWinnerIndex];
 
-    // Very short animation - just 0.5 cycles through users
-    const minCycles = 0.5;
+    // Even shorter animation so winners are announced faster
+    const minCycles = 0.2;
     const totalIterations = Math.floor(users.length * minCycles) + randomWinnerIndex;
     let currentIteration = 0;
     let currentIndex = Math.floor(Math.random() * users.length);
     setCurrentDisplayIndex(currentIndex);
-    let speed = 40; // Start very fast
+    let speed = 20; // Start ultra-fast
 
     const animate = () => {
       currentIteration++;
@@ -143,11 +146,11 @@ const PrizeRoulette: React.FC<PrizeRouletteProps> = ({ isOpen, onClose }) => {
 
       // Very fast deceleration
       if (currentIteration < totalIterations * 0.8) {
-        // First 80% - very fast
-        speed = Math.min(speed + 4, 70);
+        // First 80% - keep it snappy
+        speed = Math.min(speed + 3, 60);
       } else {
-        // Last 20% - slow, approaching final
-        speed = Math.min(speed + 15, 180);
+        // Last 20% - brief slowdown
+        speed = Math.min(speed + 10, 120);
       }
 
       // Check if we've reached the target
@@ -156,12 +159,11 @@ const PrizeRoulette: React.FC<PrizeRouletteProps> = ({ isOpen, onClose }) => {
       } else {
         // Final selection - ensure we land on the winner
         setCurrentDisplayIndex(randomWinnerIndex);
-        setTimeout(async () => {
+        setTimeout(() => {
           setSelectedWinner(targetWinner);
           setIsPicking(false);
-          // Save winner to database
-          await saveWinner(targetWinner);
-        }, 80); // Very quick delay
+          setIsWinnerAccepted(false); // Reset acceptance state for new winner
+        }, 40); // Very quick delay
         
         // Clear interval
         if (animationIntervalRef.current) {
@@ -208,15 +210,32 @@ const PrizeRoulette: React.FC<PrizeRouletteProps> = ({ isOpen, onClose }) => {
       if (response.ok) {
         // Refresh winners count from database
         await fetchWinnersCount();
+        setIsWinnerAccepted(true);
         console.log('Winner saved successfully');
       } else {
         console.error('Failed to save winner');
+        alert('Dështoi ruajtja e fituesit. Ju lutem provoni përsëri.');
       }
     } catch (error) {
       console.error('Error saving winner:', error);
+      alert('Gabim gjatë ruajtjes së fituesit. Ju lutem provoni përsëri.');
     } finally {
       setIsSavingWinner(false);
     }
+  };
+
+  // Handle accepting the winner
+  const handleAcceptWinner = async () => {
+    if (!selectedWinner) return;
+    await saveWinner(selectedWinner);
+  };
+
+  // Handle rejecting the winner - quick re-pick
+  const handleRejectWinner = () => {
+    setSelectedWinner(null);
+    setIsWinnerAccepted(false);
+    // Immediately start picking again
+    startPicking();
   };
 
   const resetSelection = () => {
@@ -224,6 +243,7 @@ const PrizeRoulette: React.FC<PrizeRouletteProps> = ({ isOpen, onClose }) => {
     setSelectedWinner(null);
     setCurrentDisplayIndex(0);
     setIsPicking(false);
+    setIsWinnerAccepted(false);
     setTotalQuantityInput(''); // Reset quantity input
     
     // Clear any running animation
@@ -522,55 +542,57 @@ const PrizeRoulette: React.FC<PrizeRouletteProps> = ({ isOpen, onClose }) => {
                 transition={{ duration: 0.2 }}
                 className="space-y-6"
               >
-                {/* Confetti/Fire Effect */}
-                <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-2xl">
-                  {[...Array(50)].map((_, i) => (
-                    <motion.div
-                      key={i}
-                      className="absolute w-2 h-2 bg-[#D92127] rounded-full"
-                      initial={{
-                        x: '50%',
-                        y: '50%',
-                        opacity: 1,
-                        scale: 1,
-                      }}
-                      animate={{
-                        x: `${50 + (Math.random() - 0.5) * 200}%`,
-                        y: `${50 + (Math.random() - 0.5) * 200}%`,
-                        opacity: 0,
-                        scale: 0,
-                      }}
-                      transition={{
-                        duration: 2,
-                        delay: Math.random() * 0.5,
-                        ease: 'easeOut',
-                      }}
-                    />
-                  ))}
-                  {[...Array(30)].map((_, i) => (
-                    <motion.div
-                      key={`gold-${i}`}
-                      className="absolute w-3 h-3 bg-yellow-400 rounded-full"
-                      initial={{
-                        x: '50%',
-                        y: '50%',
-                        opacity: 1,
-                        scale: 1,
-                      }}
-                      animate={{
-                        x: `${50 + (Math.random() - 0.5) * 200}%`,
-                        y: `${50 + (Math.random() - 0.5) * 200}%`,
-                        opacity: 0,
-                        scale: 0,
-                      }}
-                      transition={{
-                        duration: 2.5,
-                        delay: Math.random() * 0.5,
-                        ease: 'easeOut',
-                      }}
-                    />
-                  ))}
-                </div>
+                {/* Confetti/Fire Effect - Only show when accepted */}
+                {isWinnerAccepted && (
+                  <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-2xl">
+                    {[...Array(50)].map((_, i) => (
+                      <motion.div
+                        key={i}
+                        className="absolute w-2 h-2 bg-[#D92127] rounded-full"
+                        initial={{
+                          x: '50%',
+                          y: '50%',
+                          opacity: 1,
+                          scale: 1,
+                        }}
+                        animate={{
+                          x: `${50 + (Math.random() - 0.5) * 200}%`,
+                          y: `${50 + (Math.random() - 0.5) * 200}%`,
+                          opacity: 0,
+                          scale: 0,
+                        }}
+                        transition={{
+                          duration: 2,
+                          delay: Math.random() * 0.5,
+                          ease: 'easeOut',
+                        }}
+                      />
+                    ))}
+                    {[...Array(30)].map((_, i) => (
+                      <motion.div
+                        key={`gold-${i}`}
+                        className="absolute w-3 h-3 bg-yellow-400 rounded-full"
+                        initial={{
+                          x: '50%',
+                          y: '50%',
+                          opacity: 1,
+                          scale: 1,
+                        }}
+                        animate={{
+                          x: `${50 + (Math.random() - 0.5) * 200}%`,
+                          y: `${50 + (Math.random() - 0.5) * 200}%`,
+                          opacity: 0,
+                          scale: 0,
+                        }}
+                        transition={{
+                          duration: 2.5,
+                          delay: Math.random() * 0.5,
+                          ease: 'easeOut',
+                        }}
+                      />
+                    ))}
+                  </div>
+                )}
 
                 <div className="bg-yellow-50 rounded-xl sm:rounded-2xl p-4 sm:p-6 md:p-8 relative overflow-hidden">
                   {/* Celebration Text */}
@@ -580,12 +602,25 @@ const PrizeRoulette: React.FC<PrizeRouletteProps> = ({ isOpen, onClose }) => {
                     transition={{ type: 'spring', stiffness: 200, damping: 15 }}
                     className="text-center mb-4 sm:mb-6"
                   >
-                    <h3 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-anton text-[#D92127] mb-2">
-                      URIME!
-                    </h3>
-                    <p className="text-base sm:text-lg md:text-xl font-anton text-[#D92127]">
-                      Fituesi është zgjedhur!
-                    </p>
+                    {isWinnerAccepted ? (
+                      <>
+                        <h3 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-anton text-[#D92127] mb-2">
+                          URIME!
+                        </h3>
+                        <p className="text-base sm:text-lg md:text-xl font-anton text-[#D92127]">
+                          Fituesi është zgjedhur dhe pranuar!
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <h3 className="text-xl sm:text-2xl md:text-3xl font-anton text-gray-800 mb-2">
+                          Fitues i Zgjedhur
+                        </h3>
+                        <p className="text-sm sm:text-base md:text-lg font-anton text-gray-600">
+                          Ju lutem kontrolloni informacionet para pranimit
+                        </p>
+                      </>
+                    )}
                   </motion.div>
                   
                   {/* Prize Info */}
@@ -604,7 +639,10 @@ const PrizeRoulette: React.FC<PrizeRouletteProps> = ({ isOpen, onClose }) => {
                         </p>
                         {prizeConfigs[selectedPrize.id] && (
                           <p className="text-sm font-bwseidoround-thin text-gray-600 mt-1">
-                            Progres: {prizeConfigs[selectedPrize.id].winnersPicked + 1}/{prizeConfigs[selectedPrize.id].totalQuantity} fitues
+                            Progres: {prizeConfigs[selectedPrize.id].winnersPicked}/{prizeConfigs[selectedPrize.id].totalQuantity} fitues
+                            {!isWinnerAccepted && (
+                              <span className="text-gray-500"> (pas pranimit: {prizeConfigs[selectedPrize.id].winnersPicked + 1})</span>
+                            )}
                           </p>
                         )}
                       </div>
@@ -665,6 +703,37 @@ const PrizeRoulette: React.FC<PrizeRouletteProps> = ({ isOpen, onClose }) => {
                     </div>
                   </div>
 
+                  {/* Acceptance Status */}
+                  {!isWinnerAccepted && (
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                      <p className="text-center text-blue-800 font-bwseidoround-medium text-sm sm:text-base mb-3">
+                        Ju lutem kontrolloni informacionet e fituesit përpara se ta pranoni
+                      </p>
+                      
+                      {/* Accept/Reject Buttons */}
+                      <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 justify-center">
+                        <button
+                          onClick={handleAcceptWinner}
+                          disabled={isSavingWinner}
+                          className={`flex-1 sm:flex-none px-6 sm:px-8 py-3 sm:py-4 bg-green-600 text-white font-anton rounded-lg sm:rounded-xl hover:bg-green-700 transition-colors shadow-md text-base sm:text-lg ${
+                            isSavingWinner ? 'opacity-50 cursor-not-allowed' : ''
+                          }`}
+                        >
+                          ✓ Pranoj Fituesin
+                        </button>
+                        <button
+                          onClick={handleRejectWinner}
+                          disabled={isSavingWinner || isPicking}
+                          className={`flex-1 sm:flex-none px-6 sm:px-8 py-3 sm:py-4 bg-red-600 text-white font-anton rounded-lg sm:rounded-xl hover:bg-red-700 transition-colors shadow-md text-base sm:text-lg ${
+                            (isSavingWinner || isPicking) ? 'opacity-50 cursor-not-allowed' : ''
+                          }`}
+                        >
+                          ✗ Refuzoj dhe Zgjedh Tjetër
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Saving indicator */}
                   {isSavingWinner && (
                     <div className="text-center py-2">
@@ -674,23 +743,46 @@ const PrizeRoulette: React.FC<PrizeRouletteProps> = ({ isOpen, onClose }) => {
                     </div>
                   )}
 
-                  {/* Action Buttons */}
+                  {/* Accepted confirmation */}
+                  {isWinnerAccepted && !isSavingWinner && (
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+                      <p className="text-center text-green-800 font-bwseidoround-medium text-sm sm:text-base">
+                        ✓ Fituesi u pranua dhe u ruajt me sukses!
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Action Buttons - Show after acceptance or for navigation */}
                   <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 justify-center mt-4 sm:mt-6">
-                    <button
-                      onClick={resetSelection}
-                      disabled={isSavingWinner}
-                      className={`w-full sm:w-auto px-5 sm:px-6 py-2 sm:py-3 bg-[#D92127] text-white font-anton rounded-lg sm:rounded-xl hover:bg-[#B71C1C] transition-colors shadow-md text-sm sm:text-base ${
-                        isSavingWinner ? 'opacity-50 cursor-not-allowed' : ''
-                      }`}
-                    >
-                      Zgjedh Tjetër
-                    </button>
-                    <button
-                      onClick={onClose}
-                      className="w-full sm:w-auto px-5 sm:px-6 py-2 sm:py-3 bg-gray-500 text-white font-anton rounded-lg sm:rounded-xl hover:bg-gray-600 transition-colors shadow-md text-sm sm:text-base"
-                    >
-                      Mbyll
-                    </button>
+                    {isWinnerAccepted ? (
+                      <>
+                        <button
+                          onClick={resetSelection}
+                          disabled={isSavingWinner}
+                          className={`w-full sm:w-auto px-5 sm:px-6 py-2 sm:py-3 bg-[#D92127] text-white font-anton rounded-lg sm:rounded-xl hover:bg-[#B71C1C] transition-colors shadow-md text-sm sm:text-base ${
+                            isSavingWinner ? 'opacity-50 cursor-not-allowed' : ''
+                          }`}
+                        >
+                          Zgjedh Tjetër Fitues
+                        </button>
+                        <button
+                          onClick={onClose}
+                          className="w-full sm:w-auto px-5 sm:px-6 py-2 sm:py-3 bg-gray-500 text-white font-anton rounded-lg sm:rounded-xl hover:bg-gray-600 transition-colors shadow-md text-sm sm:text-base"
+                        >
+                          Mbyll
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        onClick={onClose}
+                        disabled={isSavingWinner}
+                        className={`w-full px-5 sm:px-6 py-2 sm:py-3 bg-gray-500 text-white font-anton rounded-lg sm:rounded-xl hover:bg-gray-600 transition-colors shadow-md text-sm sm:text-base ${
+                          isSavingWinner ? 'opacity-50 cursor-not-allowed' : ''
+                        }`}
+                      >
+                        Mbyll
+                      </button>
+                    )}
                   </div>
                 </div>
               </motion.div>

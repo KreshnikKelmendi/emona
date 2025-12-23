@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
+import { jsPDF } from 'jspdf';
 
 interface Winner {
   _id: string;
@@ -28,6 +29,7 @@ const WinnersList: React.FC<WinnersListProps> = ({ isOpen, onClose }) => {
   const [error, setError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deletingPrizeId, setDeletingPrizeId] = useState<number | null>(null);
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -134,6 +136,134 @@ const WinnersList: React.FC<WinnersListProps> = ({ isOpen, onClose }) => {
     }
   };
 
+  // Download winners as PDF
+  const handleDownloadPdf = () => {
+    if (winners.length === 0) {
+      alert('Nuk ka fitues për t\'u shkarkuar.');
+      return;
+    }
+
+    try {
+      setExporting(true);
+
+      const doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const margin = 15;
+      const maxWidth = pageWidth - (margin * 2);
+
+      // Title
+      doc.setFontSize(18);
+      doc.setFont('helvetica', 'bold');
+      const title = 'Lista e Fituesve';
+      const titleWidth = doc.getTextWidth(title);
+      doc.text(title, (pageWidth - titleWidth) / 2, 20);
+
+      // Generated date
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      const generatedAt = new Date().toLocaleString('sq-AL', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+      const dateText = `Gjeneruar: ${generatedAt}`;
+      const dateWidth = doc.getTextWidth(dateText);
+      doc.text(dateText, (pageWidth - dateWidth) / 2, 27);
+
+      let y = 35;
+      const lineHeight = 7;
+      const bottomMargin = pageHeight - 20;
+
+      // Group winners by prize for better organization
+      const winnersByPrize = winners.reduce((acc, winner) => {
+        if (!acc[winner.prizeId]) {
+          acc[winner.prizeId] = [];
+        }
+        acc[winner.prizeId].push(winner);
+        return acc;
+      }, {} as Record<number, Winner[]>);
+
+      const uniquePrizes = Array.from(
+        new Map(winners.map(w => [w.prizeId, { id: w.prizeId, name: w.prizeName }])).values()
+      );
+
+      uniquePrizes.forEach((prize) => {
+        const prizeWinners = winnersByPrize[prize.id] || [];
+        
+        // Check if we need a new page
+        if (y > bottomMargin - (prizeWinners.length * lineHeight * 4 + 15)) {
+          doc.addPage();
+          y = 20;
+        }
+
+        // Prize header
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        const prizeHeader = `Çmimi: ${prize.name}`;
+        doc.text(prizeHeader, margin, y);
+        y += lineHeight + 2;
+
+        // Winners for this prize
+        prizeWinners.forEach((winner, index) => {
+          // Check if we need a new page
+          if (y > bottomMargin - (lineHeight * 4)) {
+            doc.addPage();
+            y = 20;
+          }
+
+          doc.setFontSize(11);
+          doc.setFont('helvetica', 'normal');
+          
+          // Winner number and name
+          doc.setFont('helvetica', 'bold');
+          const winnerText = `${index + 1}. ${winner.fullName}`;
+          doc.text(winnerText, margin + 5, y);
+          y += lineHeight;
+
+          // Phone
+          doc.setFont('helvetica', 'normal');
+          doc.text(`   Telefon: ${winner.phone}`, margin + 5, y);
+          y += lineHeight;
+
+          // Quantity
+          doc.text(`   Sasi: ${winner.quantity} ${winner.quantity > 1 ? 'copë' : 'copë'} (${winner.quantity}/${winner.totalQuantity})`, margin + 5, y);
+          y += lineHeight;
+
+          // Date
+          const winnerDate = new Date(winner.createdAt).toLocaleDateString('sq-AL', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+          doc.text(`   Data: ${winnerDate}`, margin + 5, y);
+          y += lineHeight + 2;
+        });
+
+        y += 3; // Extra space between prize groups
+      });
+
+      // Save PDF
+      doc.save(`fituesit_${new Date().toISOString().split('T')[0]}.pdf`);
+      
+    } catch (err) {
+      console.error('Error generating PDF:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      alert(`Dështoi gjenerimi i PDF: ${errorMessage}. Ju lutem provoni përsëri.`);
+    } finally {
+      setExporting(false);
+    }
+  };
+
   // Group winners by prize
   const winnersByPrize = winners.reduce((acc, winner) => {
     if (!acc[winner.prizeId]) {
@@ -183,15 +313,26 @@ const WinnersList: React.FC<WinnersListProps> = ({ isOpen, onClose }) => {
               <p className="text-center text-xs sm:text-sm text-gray-500 font-bwseidoround-thin">
                 {winners.length} fitues total
               </p>
-              {winners.length > 0 && (
-                <button
-                  onClick={handleDeleteAll}
-                  disabled={deletingPrizeId === -1}
-                  className="px-3 py-1.5 bg-red-600 text-white font-anton text-xs sm:text-sm rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {deletingPrizeId === -1 ? 'Duke fshirë...' : 'Fshi Të Gjithë'}
-                </button>
-              )}
+              <div className="flex items-center gap-2">
+                {winners.length > 0 && (
+                  <>
+                    <button
+                      onClick={handleDownloadPdf}
+                      disabled={exporting}
+                      className="px-3 py-1.5 bg-[#D92127] text-white font-anton text-xs sm:text-sm rounded-lg hover:bg-[#B71C1C] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {exporting ? 'Duke shkarkuar...' : 'Shkarko PDF'}
+                    </button>
+                    <button
+                      onClick={handleDeleteAll}
+                      disabled={deletingPrizeId === -1}
+                      className="px-3 py-1.5 bg-red-600 text-white font-anton text-xs sm:text-sm rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {deletingPrizeId === -1 ? 'Duke fshirë...' : 'Fshi Të Gjithë'}
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
 
             {/* Loading State */}
