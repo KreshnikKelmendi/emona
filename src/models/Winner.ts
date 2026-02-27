@@ -9,6 +9,8 @@ export interface IWinner extends Document {
   prizeImage: string;
   quantity: number; // Sa sasi janë dhënë për këtë fitues
   totalQuantity: number; // Sa sasi totale ka çmimi (p.sh. 10 paketime caji)
+  cashTotalAmount?: number; // Shuma totale per "Para te Gatshme"
+  cashAmountPerWinner?: number; // Shuma per fitues pas ndarjes
   createdAt: Date;
   updatedAt: Date;
 }
@@ -51,6 +53,16 @@ const WinnerSchema: Schema = new Schema({
     type: Number,
     required: [true, 'Total quantity is required'],
     min: [1, 'Total quantity must be at least 1']
+  },
+  cashTotalAmount: {
+    type: Number,
+    required: false,
+    min: [0, 'Cash total amount must be at least 0']
+  },
+  cashAmountPerWinner: {
+    type: Number,
+    required: false,
+    min: [0, 'Cash amount per winner must be at least 0']
   }
 }, {
   timestamps: true

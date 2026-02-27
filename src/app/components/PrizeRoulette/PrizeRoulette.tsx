@@ -14,6 +14,14 @@ interface PrizeConfig {
   prizeId: number;
   totalQuantity: number; // Total number of winners needed for this prize
   winnersPicked: number; // How many winners have been picked so far
+  cashTotalAmount?: number;
+  cashAmountPerWinner?: number;
+  cashTiers?: CashTier[];
+}
+
+interface CashTier {
+  amountPerWinner: number;
+  winnersCount: number;
 }
 
 interface User {
@@ -43,6 +51,8 @@ const prizes: Prize[] = [
   { id: 6, name: "Derivate në vlerë 50 euro", image: "/assets/shperblime-06.webp" },
 ];
 
+const CASH_PRIZE_ID = 3;
+
 const PrizeRoulette: React.FC<PrizeRouletteProps> = ({ isOpen, onClose }) => {
   const [selectedPrize, setSelectedPrize] = useState<Prize | null>(null);
   const [selectedWinner, setSelectedWinner] = useState<User | null>(null);
@@ -54,7 +64,25 @@ const PrizeRoulette: React.FC<PrizeRouletteProps> = ({ isOpen, onClose }) => {
   const [isSavingWinner, setIsSavingWinner] = useState(false);
   const [isWinnerAccepted, setIsWinnerAccepted] = useState(false);
   const [totalQuantityInput, setTotalQuantityInput] = useState<string>(''); // Total quantity needed for selected prize
+  const [cashTierInputs, setCashTierInputs] = useState<Array<{ amount: string; winners: string }>>([
+    { amount: '', winners: '' }
+  ]);
+  const [pendingCashAmount, setPendingCashAmount] = useState<number | null>(null);
   const animationIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  const getCashAmountForWinnerIndex = (config: PrizeConfig, winnerIndex: number): number | null => {
+    if (!config.cashTiers || config.cashTiers.length === 0) return null;
+
+    let remainingIndex = winnerIndex;
+    for (const tier of config.cashTiers) {
+      if (remainingIndex < tier.winnersCount) {
+        return tier.amountPerWinner;
+      }
+      remainingIndex -= tier.winnersCount;
+    }
+
+    return null;
+  };
 
   // Fetch winners count for each prize to track distribution
   const fetchWinnersCount = useCallback(async () => {
@@ -160,7 +188,13 @@ const PrizeRoulette: React.FC<PrizeRouletteProps> = ({ isOpen, onClose }) => {
         // Final selection - ensure we land on the winner
         setCurrentDisplayIndex(randomWinnerIndex);
         setTimeout(() => {
+          const configForSelectedPrize = prizeConfigs[selectedPrize.id];
+          const nextCashAmount = selectedPrize.id === CASH_PRIZE_ID && configForSelectedPrize
+            ? getCashAmountForWinnerIndex(configForSelectedPrize, configForSelectedPrize.winnersPicked)
+            : null;
+
           setSelectedWinner(targetWinner);
+          setPendingCashAmount(nextCashAmount);
           setIsPicking(false);
           setIsWinnerAccepted(false); // Reset acceptance state for new winner
         }, 40); // Very quick delay
@@ -183,6 +217,10 @@ const PrizeRoulette: React.FC<PrizeRouletteProps> = ({ isOpen, onClose }) => {
 
     const config = prizeConfigs[selectedPrize.id];
     if (!config) return;
+    if (selectedPrize.id === CASH_PRIZE_ID && (!pendingCashAmount || pendingCashAmount <= 0)) {
+      alert('Nuk u gjet shuma e sakte per kete fitues.');
+      return;
+    }
 
     try {
       setIsSavingWinner(true);
@@ -203,7 +241,9 @@ const PrizeRoulette: React.FC<PrizeRouletteProps> = ({ isOpen, onClose }) => {
           prizeName: selectedPrize.name,
           prizeImage: selectedPrize.image,
           quantity: quantity,
-          totalQuantity: config.totalQuantity
+          totalQuantity: config.totalQuantity,
+          cashTotalAmount: selectedPrize.id === CASH_PRIZE_ID ? config.cashTotalAmount : undefined,
+          cashAmountPerWinner: selectedPrize.id === CASH_PRIZE_ID ? pendingCashAmount : undefined
         }),
       });
 
@@ -233,6 +273,7 @@ const PrizeRoulette: React.FC<PrizeRouletteProps> = ({ isOpen, onClose }) => {
   // Handle rejecting the winner - quick re-pick
   const handleRejectWinner = () => {
     setSelectedWinner(null);
+    setPendingCashAmount(null);
     setIsWinnerAccepted(false);
     // Immediately start picking again
     startPicking();
@@ -245,6 +286,8 @@ const PrizeRoulette: React.FC<PrizeRouletteProps> = ({ isOpen, onClose }) => {
     setIsPicking(false);
     setIsWinnerAccepted(false);
     setTotalQuantityInput(''); // Reset quantity input
+    setCashTierInputs([{ amount: '', winners: '' }]);
+    setPendingCashAmount(null);
     
     // Clear any running animation
     if (animationIntervalRef.current) {
@@ -257,21 +300,54 @@ const PrizeRoulette: React.FC<PrizeRouletteProps> = ({ isOpen, onClose }) => {
   const handlePrizeSelection = (prize: Prize) => {
     setSelectedPrize(prize);
     setTotalQuantityInput('');
+    setCashTierInputs([{ amount: '', winners: '' }]);
     
     // If config exists, show it
     if (prizeConfigs[prize.id]) {
       setTotalQuantityInput(prizeConfigs[prize.id].totalQuantity.toString());
+      if (prize.id === CASH_PRIZE_ID && prizeConfigs[prize.id].cashTiers?.length) {
+        setCashTierInputs(
+          prizeConfigs[prize.id].cashTiers!.map((tier) => ({
+            amount: tier.amountPerWinner.toString(),
+            winners: tier.winnersCount.toString()
+          }))
+        );
+      }
     }
   };
 
   // Handle setting total quantity for a prize
   const handleSetQuantity = () => {
     if (!selectedPrize) return;
-    
-    const quantity = parseInt(totalQuantityInput);
-    if (isNaN(quantity) || quantity < 1) {
-      alert('Ju lutem shkruani një numër të vlefshëm (më të madh se 0)');
-      return;
+
+    let quantity = parseInt(totalQuantityInput);
+    let cashTotalAmount: number | undefined;
+    let cashAmountPerWinner: number | undefined;
+    let cashTiers: CashTier[] | undefined;
+
+    if (selectedPrize.id === CASH_PRIZE_ID) {
+      const parsedTiers = cashTierInputs
+        .map((tier) => ({
+          amountPerWinner: parseFloat(tier.amount),
+          winnersCount: parseInt(tier.winners)
+        }))
+        .filter((tier) => !isNaN(tier.amountPerWinner) && tier.amountPerWinner > 0 && !isNaN(tier.winnersCount) && tier.winnersCount > 0);
+
+      if (parsedTiers.length === 0) {
+        alert('Shto te pakten nje shume me numer fituesish per Para te Gatshme.');
+        return;
+      }
+
+      cashTiers = parsedTiers;
+      quantity = parsedTiers.reduce((sum, tier) => sum + tier.winnersCount, 0);
+      cashTotalAmount = Number(parsedTiers.reduce((sum, tier) => sum + (tier.amountPerWinner * tier.winnersCount), 0).toFixed(2));
+      cashAmountPerWinner = parsedTiers[0].amountPerWinner;
+      setTotalQuantityInput(quantity.toString());
+    } else {
+      if (isNaN(quantity) || quantity < 1) {
+        alert('Ju lutem shkruani një numër të vlefshëm (më të madh se 0)');
+        return;
+      }
     }
 
     setPrizeConfigs(prev => ({
@@ -279,7 +355,10 @@ const PrizeRoulette: React.FC<PrizeRouletteProps> = ({ isOpen, onClose }) => {
       [selectedPrize.id]: {
         prizeId: selectedPrize.id,
         totalQuantity: quantity,
-        winnersPicked: prev[selectedPrize.id]?.winnersPicked || 0
+        winnersPicked: prev[selectedPrize.id]?.winnersPicked || 0,
+        cashTotalAmount,
+        cashAmountPerWinner,
+        cashTiers
       }
     }));
   };
@@ -296,6 +375,12 @@ const PrizeRoulette: React.FC<PrizeRouletteProps> = ({ isOpen, onClose }) => {
       }
     };
   }, [isOpen]);
+
+  const getRemainingWinnersText = (remaining: number) => {
+    if (remaining <= 0) return 'Shpallja ka perfunduar';
+    if (remaining === 1) return "Ka mbetur edhe 1 fitues per t'u shpallur";
+    return `Kane mbetur edhe ${remaining} fitues per t'u shpallur`;
+  };
 
   const currentDisplayUser = users[currentDisplayIndex] || null;
 
@@ -372,8 +457,8 @@ const PrizeRoulette: React.FC<PrizeRouletteProps> = ({ isOpen, onClose }) => {
                             isComplete ? 'text-green-600' : 'text-gray-600'
                           }`}>
                             {isComplete 
-                              ? `E përfunduar (${config.totalQuantity}/${config.totalQuantity})`
-                              : `${remaining} të mbetura nga ${config.totalQuantity}`
+                              ? 'Shpallja ka perfunduar'
+                              : getRemainingWinnersText(remaining || 0)
                             }
                           </p>
                         )}
@@ -410,12 +495,19 @@ const PrizeRoulette: React.FC<PrizeRouletteProps> = ({ isOpen, onClose }) => {
                         {selectedPrize.name}
                       </p>
                       {hasConfig && (
-                        <p className="text-xs sm:text-sm font-bwseidoround-thin text-gray-600 mt-1">
-                          {config.winnersPicked >= config.totalQuantity 
-                            ? `E përfunduar: ${config.totalQuantity}/${config.totalQuantity} fitues`
-                            : `Progres: ${config.winnersPicked}/${config.totalQuantity} fitues`
-                          }
-                        </p>
+                        <>
+                          <p className="text-xs sm:text-sm font-bwseidoround-thin text-gray-600 mt-1">
+                            {config.winnersPicked >= config.totalQuantity 
+                              ? 'Shpallja ka perfunduar'
+                              : getRemainingWinnersText(config.totalQuantity - config.winnersPicked)
+                            }
+                          </p>
+                          {selectedPrize.id === CASH_PRIZE_ID && config.cashTotalAmount && (
+                            <p className="text-xs sm:text-sm font-bwseidoround-thin text-gray-600 mt-1">
+                              Totali: €{config.cashTotalAmount.toFixed(2)} | Shuma te konfiguruara: {config.cashTiers?.length || 0}
+                            </p>
+                          )}
+                        </>
                       )}
                     </div>
                   </div>
@@ -423,34 +515,111 @@ const PrizeRoulette: React.FC<PrizeRouletteProps> = ({ isOpen, onClose }) => {
                   {/* Quantity Setup - Only show if not configured or if all winners picked */}
                   {(!hasConfig || (hasConfig && config.winnersPicked >= config.totalQuantity)) && (
                     <div className="bg-white rounded-lg sm:rounded-xl p-4 sm:p-5 border border-gray-200">
-                      <label className="block text-sm sm:text-base font-anton text-gray-900 mb-2">
-                        {hasConfig && config.winnersPicked >= config.totalQuantity
-                          ? 'Ndrysho sasinë totale të nevojshme:'
-                          : 'Shkruani sa fitues nevojiten për këtë çmim:'
-                        }
-                      </label>
-                      <div className="flex gap-2">
-                        <input
-                          type="number"
-                          min="1"
-                          value={totalQuantityInput}
-                          onChange={(e) => {
-                            const value = e.target.value;
-                            if (value === '' || (!isNaN(parseInt(value)) && parseInt(value) > 0)) {
-                              setTotalQuantityInput(value);
+                      {selectedPrize.id !== CASH_PRIZE_ID ? (
+                        <>
+                          <label className="block text-sm sm:text-base font-anton text-gray-900 mb-2">
+                            {hasConfig && config.winnersPicked >= config.totalQuantity
+                              ? 'Ndrysho sasinë totale të nevojshme:'
+                              : 'Shkruani sa fitues nevojiten për këtë çmim:'
                             }
-                          }}
-                          placeholder="Numri i fituesve"
-                          className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D92127] focus:border-[#D92127] font-bwseidoround-thin text-gray-900 text-lg"
-                        />
-                        <button
-                          onClick={handleSetQuantity}
-                          disabled={!totalQuantityInput || parseInt(totalQuantityInput) < 1}
-                          className={`px-6 py-3 bg-[#D92127] text-white font-anton rounded-lg hover:bg-[#B71C1C] transition-colors disabled:opacity-50 disabled:cursor-not-allowed`}
-                        >
-                          {hasConfig && config.winnersPicked >= config.totalQuantity ? 'Përditëso' : 'Konfirmo'}
-                        </button>
-                      </div>
+                          </label>
+                          <div className="flex gap-2">
+                            <input
+                              type="number"
+                              min="1"
+                              value={totalQuantityInput}
+                              onChange={(e) => {
+                                const value = e.target.value;
+                                if (value === '' || (!isNaN(parseInt(value)) && parseInt(value) > 0)) {
+                                  setTotalQuantityInput(value);
+                                }
+                              }}
+                              placeholder="Numri i fituesve"
+                              className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D92127] focus:border-[#D92127] font-bwseidoround-thin text-gray-900 text-lg"
+                            />
+                            <button
+                              onClick={handleSetQuantity}
+                              disabled={!totalQuantityInput || parseInt(totalQuantityInput) < 1}
+                              className="px-6 py-3 bg-[#D92127] text-white font-anton rounded-lg hover:bg-[#B71C1C] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {hasConfig && config.winnersPicked >= config.totalQuantity ? 'Përditëso' : 'Konfirmo'}
+                            </button>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="space-y-3">
+                          <label className="block text-sm sm:text-base font-anton text-gray-900">
+                            Vendos shumat dhe numrin e fituesve per secilen shume:
+                          </label>
+                          {cashTierInputs.map((tier, index) => (
+                            <div key={index} className="flex gap-2">
+                              <input
+                                type="number"
+                                min="0.01"
+                                step="0.01"
+                                value={tier.amount}
+                                onChange={(e) => {
+                                  const value = e.target.value;
+                                  setCashTierInputs((prev) =>
+                                    prev.map((item, idx) => idx === index ? { ...item, amount: value } : item)
+                                  );
+                                }}
+                                placeholder="Shuma per fitues (psh. 300)"
+                                className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D92127] focus:border-[#D92127] font-bwseidoround-thin text-gray-900"
+                              />
+                              <input
+                                type="number"
+                                min="1"
+                                value={tier.winners}
+                                onChange={(e) => {
+                                  const value = e.target.value;
+                                  setCashTierInputs((prev) =>
+                                    prev.map((item, idx) => idx === index ? { ...item, winners: value } : item)
+                                  );
+                                }}
+                                placeholder="Nr. fituesve"
+                                className="w-36 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D92127] focus:border-[#D92127] font-bwseidoround-thin text-gray-900"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (cashTierInputs.length === 1) return;
+                                  setCashTierInputs((prev) => prev.filter((_, idx) => idx !== index));
+                                }}
+                                className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                              >
+                                -
+                              </button>
+                            </div>
+                          ))}
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setCashTierInputs((prev) => [...prev, { amount: '', winners: '' }])}
+                              className="px-4 py-2 bg-gray-100 text-gray-700 font-anton rounded-lg hover:bg-gray-200 transition-colors"
+                            >
+                              + Shto Shume
+                            </button>
+                            <button
+                              onClick={handleSetQuantity}
+                              className="px-6 py-2 bg-[#D92127] text-white font-anton rounded-lg hover:bg-[#B71C1C] transition-colors"
+                            >
+                              {hasConfig && config.winnersPicked >= config.totalQuantity ? 'Përditëso' : 'Konfirmo'}
+                            </button>
+                          </div>
+                          {cashTierInputs.some((tier) => tier.amount && tier.winners) && (
+                            <p className="text-xs sm:text-sm font-bwseidoround-thin text-gray-600">
+                              Totali i shperblimit: €
+                              {cashTierInputs.reduce((sum, tier) => {
+                                const amount = parseFloat(tier.amount);
+                                const winners = parseInt(tier.winners);
+                                if (isNaN(amount) || isNaN(winners) || amount <= 0 || winners <= 0) return sum;
+                                return sum + (amount * winners);
+                              }, 0).toFixed(2)}
+                            </p>
+                          )}
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -466,7 +635,10 @@ const PrizeRoulette: React.FC<PrizeRouletteProps> = ({ isOpen, onClose }) => {
                             : 'hover:bg-[#B71C1C] hover:shadow-xl active:scale-98'
                         }`}
                       >
-                        Shpall Fituesin ({config.totalQuantity - config.winnersPicked} të mbetura)
+                        {config.totalQuantity - config.winnersPicked === 1
+                          ? "Shpall fituesin e fundit"
+                          : `Shpall fituesin e radhes (mbeten ${config.totalQuantity - config.winnersPicked})`
+                        }
                       </button>
                       <button
                         onClick={resetSelection}
@@ -679,6 +851,11 @@ const PrizeRoulette: React.FC<PrizeRouletteProps> = ({ isOpen, onClose }) => {
                         <p className="text-base sm:text-lg font-bwseidoround-thin text-gray-600 mb-3 sm:mb-4">
                           {selectedWinner.phone}
                         </p>
+                        {selectedPrize.id === CASH_PRIZE_ID && pendingCashAmount && (
+                          <p className="text-base sm:text-lg font-bwseidoround-medium text-[#D92127] mb-3">
+                            Shperblimi: €{pendingCashAmount.toFixed(2)}
+                          </p>
+                        )}
                         {selectedWinner.fileUpload && selectedWinner.fileUpload.startsWith('data:image/') && (
                           <button
                             onClick={() => {

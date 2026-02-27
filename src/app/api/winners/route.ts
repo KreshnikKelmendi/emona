@@ -38,7 +38,18 @@ export async function POST(req: NextRequest) {
     console.log('Connected to MongoDB for winner save');
 
     const body = await req.json();
-    const { userId, fullName, phone, prizeId, prizeName, prizeImage, quantity, totalQuantity } = body;
+    const {
+      userId,
+      fullName,
+      phone,
+      prizeId,
+      prizeName,
+      prizeImage,
+      quantity,
+      totalQuantity,
+      cashTotalAmount,
+      cashAmountPerWinner
+    } = body;
 
     // Validate required fields
     if (!userId || !fullName || !phone || !prizeId || !prizeName || !prizeImage || !quantity || !totalQuantity) {
@@ -57,6 +68,15 @@ export async function POST(req: NextRequest) {
       }, { status: 400 });
     }
 
+    // For "Para te Gatshme" (prizeId 3), cash split fields are required
+    if (prizeId === 3) {
+      if (!cashTotalAmount || !cashAmountPerWinner || cashTotalAmount <= 0 || cashAmountPerWinner <= 0) {
+        return NextResponse.json({
+          message: 'Cash prize requires valid total amount and amount per winner'
+        }, { status: 400 });
+      }
+    }
+
     const compressedPrizeImage = await compressFileUpload(prizeImage);
 
     // Create new winner document
@@ -68,7 +88,9 @@ export async function POST(req: NextRequest) {
       prizeName,
       prizeImage: compressedPrizeImage,
       quantity,
-      totalQuantity
+      totalQuantity,
+      cashTotalAmount: prizeId === 3 ? cashTotalAmount : undefined,
+      cashAmountPerWinner: prizeId === 3 ? cashAmountPerWinner : undefined
     });
 
     // Save winner to MongoDB
@@ -82,6 +104,7 @@ export async function POST(req: NextRequest) {
         fullName: savedWinner.fullName,
         prizeName: savedWinner.prizeName,
         quantity: savedWinner.quantity,
+        cashAmountPerWinner: savedWinner.cashAmountPerWinner,
         createdAt: savedWinner.createdAt
       }
     }, { status: 201 });

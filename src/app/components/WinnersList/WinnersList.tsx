@@ -15,6 +15,8 @@ interface Winner {
   prizeImage: string;
   quantity: number;
   totalQuantity: number;
+  cashTotalAmount?: number;
+  cashAmountPerWinner?: number;
   createdAt: string;
 }
 
@@ -155,7 +157,6 @@ const WinnersList: React.FC<WinnersListProps> = ({ isOpen, onClose }) => {
       const pageWidth = doc.internal.pageSize.getWidth();
       const pageHeight = doc.internal.pageSize.getHeight();
       const margin = 15;
-      const maxWidth = pageWidth - (margin * 2);
 
       // Title
       doc.setFontSize(18);
@@ -182,8 +183,8 @@ const WinnersList: React.FC<WinnersListProps> = ({ isOpen, onClose }) => {
       const lineHeight = 7;
       const bottomMargin = pageHeight - 20;
 
-      // Group winners by prize for better organization
-      const winnersByPrize = winners.reduce((acc, winner) => {
+      // Keep PDF minimal: prize title + name/surname + reward + phone
+      const winnersByPrizeInPdf = winners.reduce((acc, winner) => {
         if (!acc[winner.prizeId]) {
           acc[winner.prizeId] = [];
         }
@@ -191,65 +192,52 @@ const WinnersList: React.FC<WinnersListProps> = ({ isOpen, onClose }) => {
         return acc;
       }, {} as Record<number, Winner[]>);
 
-      const uniquePrizes = Array.from(
-        new Map(winners.map(w => [w.prizeId, { id: w.prizeId, name: w.prizeName }])).values()
+      const uniquePrizesInPdf = Array.from(
+        new Map(winners.map((w) => [w.prizeId, { id: w.prizeId, name: w.prizeName }])).values()
       );
 
-      uniquePrizes.forEach((prize) => {
-        const prizeWinners = winnersByPrize[prize.id] || [];
-        
-        // Check if we need a new page
-        if (y > bottomMargin - (prizeWinners.length * lineHeight * 4 + 15)) {
+      uniquePrizesInPdf.forEach((prize) => {
+        const prizeWinners = winnersByPrizeInPdf[prize.id] || [];
+        if (prizeWinners.length === 0) return;
+
+        if (y > bottomMargin - (lineHeight * 5)) {
           doc.addPage();
           y = 20;
         }
 
-        // Prize header
-        doc.setFontSize(14);
+        doc.setFontSize(13);
         doc.setFont('helvetica', 'bold');
-        const prizeHeader = `Çmimi: ${prize.name}`;
-        doc.text(prizeHeader, margin, y);
-        y += lineHeight + 2;
+        doc.text(`Cmimi: ${prize.name}`, margin, y);
+        y += lineHeight + 1;
 
-        // Winners for this prize
         prizeWinners.forEach((winner, index) => {
-          // Check if we need a new page
           if (y > bottomMargin - (lineHeight * 4)) {
             doc.addPage();
             y = 20;
+            doc.setFontSize(13);
+            doc.setFont('helvetica', 'bold');
+            doc.text(`Cmimi: ${prize.name}`, margin, y);
+            y += lineHeight + 1;
           }
 
+          const rewardText = winner.prizeId === 3 && winner.cashAmountPerWinner
+            ? `EUR ${winner.cashAmountPerWinner.toFixed(2)}`
+            : winner.prizeName;
+
           doc.setFontSize(11);
-          doc.setFont('helvetica', 'normal');
-          
-          // Winner number and name
           doc.setFont('helvetica', 'bold');
-          const winnerText = `${index + 1}. ${winner.fullName}`;
-          doc.text(winnerText, margin + 5, y);
+          doc.text(`${index + 1}. ${winner.fullName}`, margin + 2, y);
           y += lineHeight;
 
-          // Phone
           doc.setFont('helvetica', 'normal');
-          doc.text(`   Telefon: ${winner.phone}`, margin + 5, y);
+          doc.text(`Shperblimi: ${rewardText}`, margin + 2, y);
           y += lineHeight;
 
-          // Quantity
-          doc.text(`   Sasi: ${winner.quantity} ${winner.quantity > 1 ? 'copë' : 'copë'} (${winner.quantity}/${winner.totalQuantity})`, margin + 5, y);
-          y += lineHeight;
-
-          // Date
-          const winnerDate = new Date(winner.createdAt).toLocaleDateString('sq-AL', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-          });
-          doc.text(`   Data: ${winnerDate}`, margin + 5, y);
+          doc.text(`Telefoni: ${winner.phone}`, margin + 2, y);
           y += lineHeight + 2;
         });
 
-        y += 3; // Extra space between prize groups
+        y += 2;
       });
 
       // Save PDF
@@ -373,6 +361,7 @@ const WinnersList: React.FC<WinnersListProps> = ({ isOpen, onClose }) => {
                   uniquePrizes.map((prize) => {
                     const prizeWinners = winnersByPrize[prize.id] || [];
                     const totalGiven = prizeWinners.reduce((sum, w) => sum + w.quantity, 0);
+                    const remaining = Math.max(prize.totalQuantity - totalGiven, 0);
                     
                     return (
                       <div key={prize.id} className="bg-gray-50 rounded-lg sm:rounded-xl p-4 sm:p-6 border border-gray-200">
@@ -391,7 +380,11 @@ const WinnersList: React.FC<WinnersListProps> = ({ isOpen, onClose }) => {
                                 {prize.name}
                               </h3>
                               <p className="text-xs sm:text-sm font-bwseidoround-thin text-gray-600">
-                                {totalGiven} nga {prize.totalQuantity} të shpërndara
+                                {remaining === 0
+                                  ? 'Shpallja ka perfunduar'
+                                  : remaining === 1
+                                    ? 'Ka mbetur edhe 1 fitues per t\'u shpallur'
+                                    : `Kane mbetur edhe ${remaining} fitues per t'u shpallur`}
                               </p>
                             </div>
                           </div>
@@ -433,6 +426,11 @@ const WinnersList: React.FC<WinnersListProps> = ({ isOpen, onClose }) => {
                                     <p className="text-sm font-bwseidoround-medium text-gray-900">
                                       Sasi: {winner.quantity} {winner.quantity > 1 ? 'copë' : 'copë'}
                                     </p>
+                                    {winner.prizeId === 3 && winner.cashAmountPerWinner && (
+                                      <p className="text-sm font-bwseidoround-medium text-[#D92127]">
+                                        Shperblimi: €{winner.cashAmountPerWinner.toFixed(2)}
+                                      </p>
+                                    )}
                                     <p className="text-xs font-bwseidoround-thin text-gray-500">
                                       {new Date(winner.createdAt).toLocaleDateString('sq-AL', {
                                         day: '2-digit',
