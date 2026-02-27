@@ -34,6 +34,7 @@ interface User {
 
 interface Winner {
   prizeId: number;
+  userId?: unknown;
   [key: string]: unknown;
 }
 
@@ -57,6 +58,7 @@ const PrizeRoulette: React.FC<PrizeRouletteProps> = ({ isOpen, onClose }) => {
   const [selectedPrize, setSelectedPrize] = useState<Prize | null>(null);
   const [selectedWinner, setSelectedWinner] = useState<User | null>(null);
   const [users, setUsers] = useState<User[]>([]);
+  const [winnerUserIds, setWinnerUserIds] = useState<Set<string>>(new Set());
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [isPicking, setIsPicking] = useState(false);
   const [currentDisplayIndex, setCurrentDisplayIndex] = useState(0);
@@ -84,6 +86,17 @@ const PrizeRoulette: React.FC<PrizeRouletteProps> = ({ isOpen, onClose }) => {
     return null;
   };
 
+  const getWinnerUserId = (winner: Winner): string | null => {
+    const rawUserId = winner.userId;
+    if (typeof rawUserId === 'string') return rawUserId;
+    if (rawUserId && typeof rawUserId === 'object') {
+      const userIdObject = rawUserId as Record<string, unknown>;
+      if (typeof userIdObject._id === 'string') return userIdObject._id;
+      if (typeof userIdObject.$oid === 'string') return userIdObject.$oid;
+    }
+    return null;
+  };
+
   // Fetch winners count for each prize to track distribution
   const fetchWinnersCount = useCallback(async () => {
     try {
@@ -108,6 +121,13 @@ const PrizeRoulette: React.FC<PrizeRouletteProps> = ({ isOpen, onClose }) => {
           });
           return updated;
         });
+
+        const pickedIds = new Set<string>();
+        winners.forEach((winner: Winner) => {
+          const userId = getWinnerUserId(winner);
+          if (userId) pickedIds.add(userId);
+        });
+        setWinnerUserIds(pickedIds);
       }
     } catch (error) {
       console.error('Error fetching winners count:', error);
@@ -152,12 +172,23 @@ const PrizeRoulette: React.FC<PrizeRouletteProps> = ({ isOpen, onClose }) => {
       return;
     }
 
+    const eligibleUsers = users.filter((user) => !winnerUserIds.has(user._id));
+    if (eligibleUsers.length === 0) {
+      alert('Nuk ka më pjesëmarrës të papërzgjedhur. Të gjithë janë shpallur fitues.');
+      return;
+    }
+
     setIsPicking(true);
     setSelectedWinner(null);
     
-    // Pre-determine the winner
-    const randomWinnerIndex = Math.floor(Math.random() * users.length);
-    const targetWinner = users[randomWinnerIndex];
+    // Pre-determine the winner from users that have never won
+    const targetWinner = eligibleUsers[Math.floor(Math.random() * eligibleUsers.length)];
+    const randomWinnerIndex = users.findIndex((user) => user._id === targetWinner._id);
+    if (randomWinnerIndex === -1) {
+      setIsPicking(false);
+      alert('Ndodhi një gabim gjatë përzgjedhjes së fituesit. Ju lutem provoni përsëri.');
+      return;
+    }
 
     // Even shorter animation so winners are announced faster
     const minCycles = 0.2;
@@ -383,6 +414,7 @@ const PrizeRoulette: React.FC<PrizeRouletteProps> = ({ isOpen, onClose }) => {
   };
 
   const currentDisplayUser = users[currentDisplayIndex] || null;
+  const availableUsersCount = users.filter((user) => !winnerUserIds.has(user._id)).length;
 
   return (
     <AnimatePresence>
@@ -417,7 +449,7 @@ const PrizeRoulette: React.FC<PrizeRouletteProps> = ({ isOpen, onClose }) => {
             </h2>
             {users.length > 0 && (
               <p className="text-center text-xs sm:text-sm text-gray-500 mb-4 sm:mb-6 font-bwseidoround-thin">
-                {users.length} pjesëmarrës në lojë
+                {users.length} pjesëmarrës në lojë • {availableUsersCount} të papërzgjedhur
               </p>
             )}
 
@@ -466,9 +498,9 @@ const PrizeRoulette: React.FC<PrizeRouletteProps> = ({ isOpen, onClose }) => {
                     );
                   })}
                 </div>
-                {users.length === 0 && !loadingUsers && (
+                {availableUsersCount === 0 && !loadingUsers && (
                   <p className="text-center text-red-500 font-bwseidoround-thin mt-4 text-xs sm:text-sm">
-                    Nuk ka pjesëmarrës për të zgjedhur fituesin
+                    Nuk ka më pjesëmarrës të papërzgjedhur për shpallje
                   </p>
                 )}
               </div>
@@ -628,9 +660,9 @@ const PrizeRoulette: React.FC<PrizeRouletteProps> = ({ isOpen, onClose }) => {
                     <div className="space-y-2 sm:space-y-3">
                       <button
                         onClick={startPicking}
-                        disabled={users.length === 0}
+                        disabled={availableUsersCount === 0}
                         className={`w-full px-6 sm:px-8 py-3 sm:py-4 bg-[#D92127] text-white font-anton text-lg sm:text-xl rounded-lg sm:rounded-xl shadow-lg transition-all ${
-                          users.length === 0
+                          availableUsersCount === 0
                             ? 'opacity-50 cursor-not-allowed'
                             : 'hover:bg-[#B71C1C] hover:shadow-xl active:scale-98'
                         }`}
